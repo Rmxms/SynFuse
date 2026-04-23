@@ -3,18 +3,18 @@ import pandas as pd
 import numpy as np
 from google.colab import drive
 
-drive.mount('/content/drive')  #mount drive
-PROJECT_PATH = "/content/drive/MyDrive/DrugGeneProject"  #project path
-print("Project exists:", os.path.exists(PROJECT_PATH))  #check path
+drive.mount('/content/drive') #mount drive
+PROJECT_PATH = "/content/drive/MyDrive/DrugGeneProject" #project path
+print("Project exists:", os.path.exists(PROJECT_PATH)) #check path
 print("Files in project folder:")
-print(os.listdir(PROJECT_PATH))  #list files
-az_file = os.path.join(PROJECT_PATH, "Astrazeneca_Main.xlsx")  #az dataset
-expr_file = os.path.join(PROJECT_PATH, "CCLE_expression.csv")  #expression
-sample_file = os.path.join(PROJECT_PATH, "sample_info.csv")  #sample info
+print(os.listdir(PROJECT_PATH)) #list files
+az_file = os.path.join(PROJECT_PATH, "Astrazeneca_Main.xlsx") #az dataset
+expr_file = os.path.join(PROJECT_PATH, "CCLE_expression.csv") #expression
+sample_file = os.path.join(PROJECT_PATH, "sample_info.csv") #sample info
 
-az = pd.read_excel(az_file)  #load az
-expr = pd.read_csv(expr_file)  #load expr
-sample = pd.read_csv(sample_file)  #load sample
+az = pd.read_excel(az_file) #load az
+expr = pd.read_csv(expr_file) #load expr
+sample = pd.read_csv(sample_file) #load sample
 
 print("AZ shape:", az.shape)
 print("Expression shape:", expr.shape)
@@ -26,17 +26,12 @@ print(expr.columns.tolist()[:20])
 print("\nSample columns:")
 print(sample.columns.tolist())
 
-display(az.head())  #preview az
-display(expr.head())  #preview expr
-display(sample.head())  #preview sample
+display(az.head()) #preview az
+display(expr.head()) #preview expr
+display(sample.head()) #preview sample
 #clean az columns
 az_clean = az.rename(columns={
-    "COMPOUND_A": "Drug_A",
-    "COMPOUND_B": "Drug_B",
-    "CELL_LINE": "Cell_Line",
-    "SYNERGY_SCORE": "Synergy",
-    "TARGET_A": "Target_A",
-    "TARGET_B": "Target_B"
+    "COMPOUND_A": "Drug_A", "COMPOUND_B": "Drug_B","CELL_LINE": "Cell_Line", "SYNERGY_SCORE": "Synergy", "TARGET_A": "Target_A","TARGET_B": "Target_B"
 })[["Drug_A", "Drug_B", "Cell_Line", "Synergy", "Target_A", "Target_B", "CANCER_TYPE", "MUTATIONS"]]
 
 print("AZ clean shape:", az_clean.shape)
@@ -44,7 +39,7 @@ display(az_clean.head())
 
 import re
 
-def clean_cell_line(x):  #normalize names as it caused many issues not to
+def clean_cell_line(x): #normalize names as it caused many issues not to
     if pd.isna(x):
         return np.nan
     x = str(x).strip().lower()
@@ -56,9 +51,9 @@ def clean_cell_line(x):  #normalize names as it caused many issues not to
     x = x.replace("/", "")
     return x
 
-az_clean["Cell_Line_Clean"] = az_clean["Cell_Line"].apply(clean_cell_line)  #apply cleaning
+az_clean["Cell_Line_Clean"] = az_clean["Cell_Line"].apply(clean_cell_line) #apply cleaning
 
-sample_bridge = sample.copy()  #copy sample
+sample_bridge = sample.copy() #copy sample
 
 #clean sample names
 sample_bridge["cell_line_name_clean"] = sample_bridge["cell_line_name"].apply(clean_cell_line)
@@ -69,7 +64,7 @@ display(sample_bridge[[
     "DepMap_ID", "cell_line_name", "stripped_cell_line_name", "CCLE_Name", "cell_line_name_clean", "stripped_cell_line_name_clean", "CCLE_Name_clean"
 ]].head())
 
-az_set = set(az_clean["Cell_Line_Clean"].dropna().unique())  #unique az names
+az_set = set(az_clean["Cell_Line_Clean"].dropna().unique()) #unique az names
 
 #check overlap
 for col in ["cell_line_name_clean", "stripped_cell_line_name_clean", "CCLE_Name_clean"]:
@@ -77,7 +72,7 @@ for col in ["cell_line_name_clean", "stripped_cell_line_name_clean", "CCLE_Name_
     overlap = az_set & sample_set
     print(f"{col}: matched {len(overlap)} / {len(az_set)}")
 
-mapping_parts = []  #store mappings
+mapping_parts = [] #store mappings
 
 #build mapping table
 for col in ["cell_line_name_clean", "stripped_cell_line_name_clean", "CCLE_Name_clean"]:
@@ -86,9 +81,9 @@ for col in ["cell_line_name_clean", "stripped_cell_line_name_clean", "CCLE_Name_
     temp = temp.dropna(subset=["Cell_Line_Clean"])
     mapping_parts.append(temp)
 
-mapping_df = pd.concat(mapping_parts, ignore_index=True)  #combine mappings
+mapping_df = pd.concat(mapping_parts, ignore_index=True) #combine mappings
 
-mapping_df = mapping_df.drop_duplicates(subset=["Cell_Line_Clean", "DepMap_ID"])  #remove duplicates
+mapping_df = mapping_df.drop_duplicates(subset=["Cell_Line_Clean", "DepMap_ID"]) #remove duplicates
 
 print("Mapping table shape:", mapping_df.shape)
 display(mapping_df.head())
